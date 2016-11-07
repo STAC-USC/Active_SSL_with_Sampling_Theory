@@ -1,0 +1,12 @@
+The code applies the proposed active learning method [1] to USPS Handwritten Digit Recognition dataset [2]. It is written in MATLAB R2013a. It uses the SGWT toolbox [3] which is also included. 
+
+To run the code, simply unpack the directory and run main_usps.m. If you have any questions, please email agadde at usc dot edu.
+
+References:
+
+[1] A. Gadde, A. Anis and A. Ortega, "Active Semi-Supervised Learning Using Sampling Theory for Graph Signals", KDD, New York, USA, 2014.
+[2] http://www.cs.nyu.edu/~roweis/data.html
+[3] D. Hammond, P. Vandergheynst, R. Gribonval, "Wavelets on Graphs via Spectral Graph Theory", ACHA, 2010 (http://wiki.epfl.ch/sgwt).
+
+
+
