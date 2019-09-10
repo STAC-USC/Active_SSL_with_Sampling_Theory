@@ -32,8 +32,8 @@ N = size(Ln,1);
 S_opt_prev = false(N,1);
 S_opt_prev(prev_queries) = true;
 
-[S_opt, cutoff] = compute_opt_set_inc(Ln_k, k, num_queries_to_add, S_opt_prev);
-queries = find(S_opt);
+[queries, cutoff] = compute_opt_set_inc(Ln_k, k, num_queries_to_add, S_opt_prev);
+S_compl = setdiff((1:N)', queries);
 
 %% reconstruction using POCS
 
@@ -52,13 +52,13 @@ c = sgwt_cheby_coeff(g,filterlen,filterlen+1,freq_range);
 
 % initialization
 mem_fn_du = mem_fn;
-mem_fn_du(~S_opt,:) = 0;
+mem_fn_du(S_compl,:) = 0;
 mem_fn_recon = sgwt_cheby_op(mem_fn_du,Ln,c,freq_range);
 
 for iter = 1:num_iter % takes fewer iterations
     % projection on C1
     err_s = (mem_fn_du-mem_fn_recon); 
-    err_s(~S_opt,:) = 0; % error on the known set
+    err_s(S_compl,:) = 0; % error on the known set
     
     % projection on C2
     mem_fn_temp = sgwt_cheby_op(mem_fn_recon + err_s,Ln,c,freq_range); % err on S approx LP
@@ -74,4 +74,4 @@ end
 [~,f] = max(mem_fn,[],2);
 
 % reconstruction error
-error_opt = sum(f(~S_opt)~=f_recon(~S_opt))/sum(~S_opt); % error for unknown labels only
+error_opt = sum(f(S_compl)~=f_recon(S_compl))/numel(S_compl); % error for unknown labels only
