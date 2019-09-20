@@ -1,5 +1,6 @@
 function [ S_opt, omega, omega_list ] = compute_opt_set_inc( L_k, k, num_nodes_to_add, current_S_opt )
 %   AUTHOR: Aamir Anis, USC
+%   AUTHOR: Benjamin Girault, USC (assert, ordered list of sampled nodes, cleanup)
 %   This function computes the optimal sampling set of a given size 
 %   "S_opt_size" that maximizes the cutoff frequency.
 
@@ -13,63 +14,61 @@ function [ S_opt, omega, omega_list ] = compute_opt_set_inc( L_k, k, num_nodes_t
 % greater the accuracy, but the complexity is also higher.
 % 
 % OUTPUT
-% S_opt: Optimal set as a logical vector
+% S_opt: Optimal set, ordered by selection
 % omega: cutoff of the optimal set
 % omega_list: List of computed cutoffs
 % 
 % % %
 
-% fprintf('Starting optimal set search...\n');
+% Graph size
 N = length(L_k);
 
-% Symmetrization
-L_k = 0.5*(L_k+L_k.');
+% L_k Symmetric?
+assert(ishermitian(L_k), 'StacUSC:ActiveSSLwithSampling:NonHermitian', 'Non Hermitian matrix L_k!');
 
 % index vector
 p = (1:N)';
 
 % Initialization : If previous state available, initialize to that
-if (exist('current_S_opt','var'))
+if exist('current_S_opt','var')
+    if numel(current_S_opt) == N
+        current_S_opt = find(current_S_opt);
+    end
     S_opt = current_S_opt;
 else
-    S_opt = false(N,1);
+    S_opt = [];
 end
 omega_list = zeros(num_nodes_to_add, 1);  
 
 for iter = 1:num_nodes_to_add
-
-%     tic
-
-%   fprintf('Iteration %d of %d...\n', iter, S_opt_size);
-
     % create index vector for Sc from indicator functions
-    q = p(~S_opt);
+    S_complement = setdiff(p, S_opt);
 
     % compute minimum eigen-pair: efficient way
-    [y,omega] = eigs(L_k(~S_opt,~S_opt),1,'sm');
-    omega = abs(omega)^(1/k);
+    [omega, y] = compute_cutoff(L_k, k, S_complement);
 
     % store a list of omega
-    omega_list(iter) = omega;
+    if nargout > 2
+        omega_list(iter) = omega;
+    end
 
     % find direction of maximum increment in reduced (|Sc|) dimensions
     [~,max_index] = max(abs(y));
 
     % Find corresponding node in N dimensions
-    node_to_add = q(max_index);
+    node_to_add = S_complement(max_index);
 
     % Update indicator function
-    S_opt(node_to_add) = 1;
+    S_opt(end + 1) = node_to_add;  %#ok
 
-    fprintf('Nodes added = %d...\n', sum(S_opt));
-    
-%     toc
-
+    fprintf('Nodes added = %d...\n', numel(S_opt));
 end
 
-% omega = compute_cutoff(L_k, k, S_opt);
-[~,omega] = eigs(L_k(~S_opt,~S_opt),1,'sm');
-omega = abs(omega)^(1/k);
-omega_list = [omega_list; omega];
+if nargout > 1
+    omega = compute_cutoff(L_k, k, setdiff(p, S_opt));
+    if nargout > 2
+        omega_list = [omega_list; omega];
+    end
+end
 
-% fprintf('Finished.\n');
+end
